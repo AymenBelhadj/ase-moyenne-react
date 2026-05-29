@@ -12,6 +12,8 @@ import {
 } from './utils/calculations';
 import { clearAppState, downloadJson, loadAppState, readJsonFile, saveAppState } from './utils/storage';
 
+const INTRO_DURATION_MS = 3400;
+
 const initialPreferences = {
   activeYearId: PROGRAM.years[0].id,
   activeSemesterId: PROGRAM.years[0].semesters[0].id,
@@ -49,11 +51,22 @@ function App() {
   const [preferences, setPreferences] = useState(() => ({ ...initialPreferences, ...(loaded?.preferences || {}) }));
   const [saveInfo, setSaveInfo] = useState({ label: 'Prêt', method: 'cookies' });
   const [showFormulas, setShowFormulas] = useState(false);
+  const [isIntroVisible, setIsIntroVisible] = useState(true);
   const importInputRef = useRef(null);
 
   const activeYear = PROGRAM.years.find((year) => year.id === preferences.activeYearId) || PROGRAM.years[0];
   const activeSemester =
     activeYear.semesters.find((semester) => semester.id === preferences.activeSemesterId) || activeYear.semesters[0];
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setIsIntroVisible(false), INTRO_DURATION_MS);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    document.body.classList.toggle('intro-lock', isIntroVisible);
+    return () => document.body.classList.remove('intro-lock');
+  }, [isIntroVisible]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = preferences.theme;
@@ -62,7 +75,7 @@ function App() {
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       const result = saveAppState({ grades, preferences });
-      setSaveInfo({ label: 'Sauvegardé automatiquement\n', method: result.method });
+      setSaveInfo({ label: 'Sauvegardé automatiquement', method: result.method });
     }, 350);
     return () => window.clearTimeout(timeout);
   }, [grades, preferences]);
@@ -139,12 +152,14 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
+    <>
+      {isIntroVisible && <IntroScreen onFinish={() => setIsIntroVisible(false)} />}
+      <div className={`app-shell ${isIntroVisible ? 'app-shell-loading' : ''}`}>
       <aside className="sidebar">
         <div className="brand-card">
           <div className="brand-icon">ASE</div>
           <div>
-            <p className="eyebrow">Calculateur</p>
+            <p className="eyebrow">Calculateur ENISo</p>
             <h1>Moyenne Automotive Software Engineering</h1>
           </div>
         </div>
@@ -288,7 +303,63 @@ function App() {
           ))}
         </section>
       </main>
-    </div>
+      </div>
+    </>
+  );
+}
+
+function IntroScreen({ onFinish }) {
+  return (
+    <section className="intro-screen" aria-label="Introduction Automotive Software Engineering">
+      <div className="intro-grid-bg" aria-hidden="true" />
+      <div className="intro-orb intro-orb-one" aria-hidden="true" />
+      <div className="intro-orb intro-orb-two" aria-hidden="true" />
+
+      <header className="intro-topbar">
+        <div className="intro-logo-card">
+          <img src="/school-logo.svg" alt="Logo de l'école" />
+          <span>National Engineers School of Sousse</span>
+        </div>
+        <div className="intro-logo-card intro-logo-card-right">
+          <span>University of Sousse</span>
+          <img src="/university-logo.svg" alt="Logo de l'université" />
+        </div>
+      </header>
+
+      <main className="intro-content">
+        <div className="intro-visual-card">
+          <img src="/intro-visual.svg" alt="Visuel Automotive Software Engineering" />
+          <span className="intro-scan-line" aria-hidden="true" />
+          <span className="intro-floating-chip chip-one">React</span>
+          <span className="intro-floating-chip chip-two">Moyenne TU</span>
+          <span className="intro-floating-chip chip-three">Auto-save</span>
+        </div>
+
+        <div className="intro-copy">
+          <p className="intro-kicker">Calculateur intelligent de moyenne</p>
+          <h1>Automotive Software Engineering</h1>
+          <p className="intro-year">Année universitaire 2025/2026</p>
+          <p className="intro-description">
+            Préparation de ton espace personnel : modules, coefficients, formules TP/projet et sauvegarde locale.
+          </p>
+
+          <div className="intro-tags" aria-label="Années disponibles">
+            <span>ASE 1</span>
+            <span>ASE 2</span>
+            <span>ASE 3</span>
+          </div>
+
+          <div className="intro-loader" aria-hidden="true">
+            <span />
+          </div>
+          <small>Chargement de ton tableau de bord...</small>
+        </div>
+      </main>
+
+      <button className="intro-skip" type="button" onClick={onFinish}>
+        Passer l’intro
+      </button>
+    </section>
   );
 }
 

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520" role="img" aria-label="Automotive Software Engineering visual">
+  <defs>
+    <linearGradient id="body" x1="130" x2="590" y1="190" y2="350" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7c3aed"/>
+      <stop offset=".55" stop-color="#06b6d4"/>
+      <stop offset="1" stop-color="#22c55e"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="210" x2="520" y1="70" y2="250" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#172554"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#000" flood-opacity=".38"/>
+    </filter>
+    <filter id="glow" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="8" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect x="110" y="70" width="500" height="260" rx="34" fill="url(#screen)" filter="url(#shadow)"/>
+  <rect x="136" y="96" width="448" height="204" rx="24" fill="#020617" opacity=".78"/>
+  <path d="M176 145h80M176 185h140M176 225h98" stroke="#67e8f9" stroke-width="14" stroke-linecap="round" opacity=".9"/>
+  <path d="M412 142 362 197l49 55M468 142l50 55-49 55" stroke="#c4b5fd" stroke-width="15" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M430 266 468 124" stroke="#22c55e" stroke-width="12" stroke-linecap="round"/>
+  <path d="M132 316c42-59 87-78 145-83h163c64 3 112 32 150 83l42 7c21 4 38 22 38 44v39H52v-38c0-23 17-42 40-45l40-7Z" fill="url(#body)" filter="url(#shadow)"/>
+  <path d="M192 306h337c-29-32-61-47-100-50H292c-40 4-70 17-100 50Z" fill="#dbeafe" opacity=".92"/>
+  <path d="M124 364h472" stroke="#f8fafc" stroke-width="8" stroke-linecap="round" opacity=".34"/>
+  <circle cx="176" cy="406" r="54" fill="#020617"/>
+  <circle cx="176" cy="406" r="25" fill="#94a3b8"/>
+  <circle cx="544" cy="406" r="54" fill="#020617"/>
+  <circle cx="544" cy="406" r="25" fill="#94a3b8"/>
+  <path d="M92 442h560" stroke="#67e8f9" stroke-width="10" stroke-linecap="round" opacity=".55" filter="url(#glow)"/>
+  <circle cx="625" cy="120" r="14" fill="#22c55e" filter="url(#glow)"/>
+  <circle cx="92" cy="178" r="10" fill="#7c3aed" filter="url(#glow)"/>
+</svg>
