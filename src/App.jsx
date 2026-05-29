@@ -317,18 +317,18 @@ function IntroScreen({ onFinish }) {
 
       <header className="intro-topbar">
         <div className="intro-logo-card">
-          <img src="/school-logo.svg" alt="Logo de l'école" />
+          <img src="/school-logo.png" alt="Logo de l'école" />
           <span>National Engineers School of Sousse</span>
         </div>
         <div className="intro-logo-card intro-logo-card-right">
           <span>University of Sousse</span>
-          <img src="/university-logo.svg" alt="Logo de l'université" />
+          <img src="/university-logo.png" alt="Logo de l'université" />
         </div>
       </header>
 
       <main className="intro-content">
         <div className="intro-visual-card">
-          <img src="/intro-visual.svg" alt="Visuel Automotive Software Engineering" />
+          <img src="/intro-visual.jpg" alt="Visuel Automotive Software Engineering" />
           <span className="intro-scan-line" aria-hidden="true" />
           <span className="intro-floating-chip chip-one">React</span>
           <span className="intro-floating-chip chip-two">Moyenne TU</span>

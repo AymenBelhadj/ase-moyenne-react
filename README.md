@@ -171,3 +171,27 @@ const INTRO_DURATION_MS = 5000;
 ### Texte affiché dans l'intro
 
 Le nom de la filière, l'année universitaire et les phrases d'accueil se trouvent dans le composant `IntroScreen` dans `src/App.jsx`.
+
+
+## Images de l’intro en JPG/PNG
+
+Cette version utilise déjà des images classiques :
+
+```text
+public/school-logo.png
+public/university-logo.png
+public/intro-visual.jpg
+```
+
+Pour personnaliser l’intro, remplace simplement ces trois fichiers par tes vraies images en gardant exactement les mêmes noms.
+Tu peux aussi utiliser `.jpg` ou `.png` librement, mais dans ce cas modifie les chemins dans `src/App.jsx`.
+
+Exemple :
+
+```jsx
+<img src="/school-logo.png" alt="Logo de l'école" />
+<img src="/university-logo.png" alt="Logo de l'université" />
+<img src="/intro-visual.jpg" alt="Visuel Automotive Software Engineering" />
+```
+
+Conseil : évite les espaces dans les noms des fichiers. Utilise plutôt `school-logo.png`, `university-logo.png`, `intro-visual.jpg`.
