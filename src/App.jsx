@@ -12,7 +12,7 @@ import {
 } from './utils/calculations';
 import { clearAppState, downloadJson, loadAppState, readJsonFile, saveAppState } from './utils/storage';
 
-const INTRO_DURATION_MS = 3400;
+const INTRO_DURATION_MS = 5500;
 
 const initialPreferences = {
   activeYearId: PROGRAM.years[0].id,
@@ -322,7 +322,7 @@ function IntroScreen({ onFinish }) {
         </div>
         <div className="intro-logo-card intro-logo-card-right">
           <span>University of Sousse</span>
-          <img src="/university-logo.png" alt="Logo de l'université" />
+          <img src="/university-logo.jpg" alt="Logo de l'université" />
         </div>
       </header>
 
@@ -336,7 +336,7 @@ function IntroScreen({ onFinish }) {
         </div>
 
         <div className="intro-copy">
-          <p className="intro-kicker">Calculateur intelligent de moyenne</p>
+          <p className="intro-kicker">Calculateur de moyenne</p>
           <h1>Automotive Software Engineering</h1>
           <p className="intro-year">Année universitaire 2025/2026</p>
           <p className="intro-description">
