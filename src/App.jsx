@@ -75,7 +75,7 @@ function App() {
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       const result = saveAppState({ grades, preferences });
-      setSaveInfo({ label: 'Sauvegardé automatiquement', method: result.method });
+      setSaveInfo({ label: 'Sauvegardé automatiquement\n', method: result.method });
     }, 350);
     return () => window.clearTimeout(timeout);
   }, [grades, preferences]);
@@ -157,9 +157,9 @@ function App() {
       <div className={`app-shell ${isIntroVisible ? 'app-shell-loading' : ''}`}>
       <aside className="sidebar">
         <div className="brand-card">
-          <div className="brand-icon">ASE</div>
+          <div className="brand-icon" style={{ backgroundColor: '#3b82f6', width: '90px', height: '42px' }}>ASE</div>
           <div>
-            <p className="eyebrow">Calculateur ENISo</p>
+            <p className="eyebrow">Calculateur</p>
             <h1>Moyenne Automotive Software Engineering</h1>
           </div>
         </div>
