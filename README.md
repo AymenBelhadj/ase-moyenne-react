@@ -4,14 +4,18 @@ Application web moderne pour calculer les moyennes du cycle **Automotive Softwar
 
 ## Fonctionnalités
 
-- Calcul automatique par module, TU, semestre et année.
+- Calcul automatique par matière, TU, semestre et année.
+- Moyennes provisoires divisées sur la somme de tous les coefficients, même si une seule matière est remplie.
+- Validation des crédits avec compensation : si la moyenne TU est ≥ 8, tous les crédits de cette TU sont validés ; sinon seules les matières ≥ 8 comptent.
+- Compensation annuelle par TU : TU1 S1 + TU1 S2, etc. Si la moyenne annuelle d'une TU est ≥ 8, tous ses crédits sont validés.
+- Boutons ASE 2 et ASE 3 verrouillés provisoirement avec message popup drôle.
 - Formules intégrées :
   - Module avec TP : `DS × 0,25 + TP × 0,25 + Examen × 0,5`
   - Module sans TP : `(DS + 2 × Examen) / 3`
   - Module avec projet : `DS × 0,25 + Projet × 0,25 + Examen × 0,5`
   - Module avec TP + projet : `DS × 0,25 + moyenne(TP, Projet) × 0,25 + Examen × 0,5` *(choix intuitif ajouté pour le cas où les deux options sont activées)*
   - Projet semestriel coefficient 4 : note unique.
-  - TU : moyenne pondérée par crédits/modules.
+  - TU : `somme(note × coefficient) / somme de tous les coefficients de la TU`.
 - Sauvegarde automatique sur le PC de l’utilisateur avec cookies découpés en blocs + copie localStorage.
 - Import/export JSON.
 - Mode sombre / clair.

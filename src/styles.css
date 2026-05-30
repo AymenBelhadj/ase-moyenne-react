@@ -160,6 +160,24 @@ button {
   background: linear-gradient(135deg, rgba(124, 58, 237, 0.26), rgba(6, 182, 212, 0.12));
 }
 
+.year-tabs button.locked {
+  position: relative;
+  opacity: 0.62;
+  border-style: dashed;
+  cursor: not-allowed;
+  filter: grayscale(0.35);
+}
+
+.year-tabs button.locked:hover {
+  transform: none;
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.year-tabs button.locked small {
+  color: #fcd34d;
+}
+
 button:hover {
   transform: translateY(-1px);
 }
@@ -399,6 +417,14 @@ button:hover {
   color: #991b1b;
 }
 
+:root[data-theme='light'] .badge.success {
+  color: #166534;
+}
+
+:root[data-theme='light'] .badge.danger {
+  color: #991b1b;
+}
+
 .tu-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -479,6 +505,25 @@ button:hover {
 .badge.warning {
   color: #fcd34d;
   border-color: rgba(245, 158, 11, 0.32);
+}
+
+.badge.success {
+  color: #86efac;
+  border-color: rgba(34, 197, 94, 0.34);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.badge.danger {
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.34);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.tu-validation-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 0.85rem 0;
 }
 
 .chip-toggle {

@@ -9,10 +9,12 @@ import {
   formatGrade,
   getFormulaKey,
   getProgress,
+  VALIDATION_THRESHOLD,
 } from './utils/calculations';
 import { clearAppState, downloadJson, loadAppState, readJsonFile, saveAppState } from './utils/storage';
 
 const INTRO_DURATION_MS = 5500;
+const UNLOCKED_YEAR_IDS = ['ase1'];
 
 const initialPreferences = {
   activeYearId: PROGRAM.years[0].id,
@@ -45,10 +47,33 @@ function gradeTone(value) {
   return 'danger';
 }
 
+function formatCredits(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return '0';
+  return Number(value).toLocaleString('fr-FR', {
+    maximumFractionDigits: 1,
+  });
+}
+
+function isYearLocked(yearId) {
+  return !UNLOCKED_YEAR_IDS.includes(yearId);
+}
+
+function normalizePreferences(savedPreferences = {}) {
+  const merged = { ...initialPreferences, ...savedPreferences };
+  if (isYearLocked(merged.activeYearId)) {
+    return {
+      ...merged,
+      activeYearId: PROGRAM.years[0].id,
+      activeSemesterId: PROGRAM.years[0].semesters[0].id,
+    };
+  }
+  return merged;
+}
+
 function App() {
   const loaded = useMemo(() => loadAppState(), []);
   const [grades, setGrades] = useState(() => mergeGrades(loaded?.grades));
-  const [preferences, setPreferences] = useState(() => ({ ...initialPreferences, ...(loaded?.preferences || {}) }));
+  const [preferences, setPreferences] = useState(() => normalizePreferences(loaded?.preferences));
   const [saveInfo, setSaveInfo] = useState({ label: 'Prêt', method: 'cookies' });
   const [showFormulas, setShowFormulas] = useState(false);
   const [isIntroVisible, setIsIntroVisible] = useState(true);
@@ -113,6 +138,20 @@ function App() {
     setPreferences((current) => ({ ...current, [key]: value }));
   }
 
+  function selectYear(year) {
+    if (isYearLocked(year.id)) {
+      if(year.id === 'ase2'){window.alert('aamjay inchalah, mazal bkri');}
+      else if(year.id === 'ase3'){window.alert('ya sahbi, mahboul yakhi?');}
+      return;
+    }
+
+    setPreferences((current) => ({
+      ...current,
+      activeYearId: year.id,
+      activeSemesterId: year.semesters[0].id,
+    }));
+  }
+
   function updateGrade(code, patch) {
     setGrades((current) => ({
       ...current,
@@ -142,7 +181,7 @@ function App() {
     try {
       const data = await readJsonFile(file);
       setGrades(mergeGrades(data.grades));
-      setPreferences({ ...initialPreferences, ...(data.preferences || {}) });
+      setPreferences(normalizePreferences(data.preferences));
       setSaveInfo({ label: 'Import réussi', method: 'fichier JSON' });
     } catch (error) {
       alert('Fichier invalide. Import impossible.');
@@ -165,22 +204,21 @@ function App() {
         </div>
 
         <nav className="year-tabs" aria-label="Choix de l'année">
-          {PROGRAM.years.map((year) => (
-            <button
-              key={year.id}
-              className={year.id === activeYear.id ? 'active' : ''}
-              onClick={() =>
-                setPreferences((current) => ({
-                  ...current,
-                  activeYearId: year.id,
-                  activeSemesterId: year.semesters[0].id,
-                }))
-              }
-            >
-              <span>{year.shortLabel}</span>
-              <small>{formatGrade(allYearsResults.find((item) => item.year.id === year.id)?.result.value)}</small>
-            </button>
-          ))}
+          {PROGRAM.years.map((year) => {
+            const locked = isYearLocked(year.id);
+            return (
+              <button
+                key={year.id}
+                className={`${year.id === activeYear.id ? 'active' : ''} ${locked ? 'locked' : ''}`}
+                aria-disabled={locked}
+                title={locked ? 'Bientôt disponible' : `Afficher ${year.label}`}
+                onClick={() => selectYear(year)}
+              >
+                <span>{year.shortLabel}</span>
+                <small>{locked ? '🔒 bientôt' : formatGrade(allYearsResults.find((item) => item.year.id === year.id)?.result.value)}</small>
+              </button>
+            );
+          })}
         </nav>
 
         <div className="semester-tabs">
@@ -219,7 +257,7 @@ function App() {
             <p className="eyebrow">{activeYear.label} · {activeSemester.label}</p>
             <h2>Tableau de bord des notes</h2>
             <p>
-              Sélectionne TP ou projet matière par matière. Les projets semestriels coefficient 4 restent en note unique.
+              Sélectionne TP ou projet matière par matière. Les moyennes provisoires sont divisées sur tous les coefficients, même si quelques notes manquent.
             </p>
           </div>
           <div className="hero-actions">
@@ -238,26 +276,26 @@ function App() {
           <KpiCard
             label={activeYear.yearFormula.label}
             value={formatGrade(yearResult.value)}
-            helper={yearResult.isComplete ? 'Moyenne officielle complète' : 'Moyenne prévisionnelle'}
+            helper={yearResult.isComplete ? 'Moyenne officielle complète' : 'Provisoire: division sur tous les coefficients'}
             tone={gradeTone(yearResult.value)}
           />
           <KpiCard
             label={`Moyenne ${activeSemester.shortLabel}`}
             value={formatGrade(semesterResult.value)}
-            helper={`${semesterResult.completedCount}/${semesterResult.count} TU complétées`}
+            helper={`${semesterResult.completedCount}/${semesterResult.count} TU complétées · division sur ${formatCredits(semesterResult.allCredits)} crédits`}
             tone={gradeTone(semesterResult.value)}
           />
           <KpiCard
             label="Crédits validés dans ce semestre"
-            value={`${semesterResult.completedCredits}/${semesterResult.allCredits}`}
-            helper="Basé sur les modules remplis"
+            value={`${formatCredits(semesterResult.completedCredits)}/${formatCredits(semesterResult.allCredits)}`}
+            helper={`TU ≥ ${VALIDATION_THRESHOLD}: tous les crédits, sinon matière par matière`}
             tone="good"
           />
           <KpiCard
-            label="État global"
-            value={progress.percent >= 100 ? 'Complet' : `${progress.percent}%`}
-            helper="Auto-save actif sur ce PC"
-            tone={progress.percent >= 100 ? 'excellent' : 'muted'}
+            label="Crédits validés dans l'année"
+            value={`${formatCredits(yearResult.completedCredits)}/${formatCredits(yearResult.allCredits)}`}
+            helper={`Compensation annuelle par TU si TU ≥ ${VALIDATION_THRESHOLD}`}
+            tone={yearResult.completedCredits >= yearResult.allCredits ? 'excellent' : 'muted'}
           />
         </section>
 
@@ -367,7 +405,7 @@ function FormulaPanel({ year }) {
   return (
     <section className="formula-panel">
       <div>
-        <p className="eyebrow">Formules PDF</p>
+        <p className="eyebrow">Formules :</p>
         <h3>Calcul automatique appliqué</h3>
       </div>
       <div className="formula-list">
@@ -375,7 +413,8 @@ function FormulaPanel({ year }) {
         <span>Sans TP: {FORMULA_LABELS.noExtra}</span>
         <span>Avec projet: {FORMULA_LABELS.project}</span>
         <span>TP + projet: {FORMULA_LABELS.tpProject}</span>
-        <span>TU: moyenne pondérée par crédits</span>
+        <span>TU: somme(note × coefficient) / somme de tous les coefficients</span>
+        <span>Validation crédits: TU ≥ {VALIDATION_THRESHOLD}, sinon matières ≥ {VALIDATION_THRESHOLD}</span>
         <span>Année: {year.yearFormula.description}</span>
       </div>
     </section>
@@ -400,11 +439,19 @@ function TuCard({ tu, grades, updateGrade, updateGradeValue, filteredModules }) 
     <article className="tu-card">
       <header className="tu-header">
         <div>
-          <p className="eyebrow">{tu.id} · {tu.credits} crédits</p>
+          <p className="eyebrow">{tu.id} · {formatCredits(tu.credits)} crédits · validés {formatCredits(result.completedCredits)}/{formatCredits(result.allCredits)}</p>
           <h3>{tu.label}</h3>
         </div>
         <div className={`tu-score ${gradeTone(result.value)}`}>{formatGrade(result.value)}</div>
       </header>
+
+      <div className="tu-validation-row">
+        <span className={`badge ${result.isCompensated ? 'success' : 'warning'}`}>
+          {result.isCompensated
+            ? `Moyenne TU ≥ ${VALIDATION_THRESHOLD}: tous les crédits validés`
+            : `TU < ${VALIDATION_THRESHOLD}: crédits par matière ≥ ${VALIDATION_THRESHOLD}`}
+        </span>
+      </div>
 
       <div className="module-list">
         {modulesToDisplay.length === 0 ? (
@@ -445,6 +492,11 @@ function ModuleCard({ module, entry, onPatch, onValue }) {
       <div className="badge-row">
         {module.badge && <span className="badge">{module.badge}</span>}
         {isLockedSingle && <span className="badge locked">Coeff 4 · note unique</span>}
+        {result.completed && (
+          <span className={`badge ${result.validated ? 'success' : 'danger'}`}>
+            {result.validated ? `Matière validée: ${formatCredits(module.credits)} crédits` : `Matière non validée (< ${VALIDATION_THRESHOLD})`}
+          </span>
+        )}
         {!result.completed && <span className="badge warning">Manque: {result.missing.join(', ')}</span>}
       </div>
 

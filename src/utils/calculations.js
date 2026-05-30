@@ -1,5 +1,7 @@
 import { PROGRAM } from '../data/program';
 
+export const VALIDATION_THRESHOLD = 8;
+
 export function clampGrade(value) {
   if (value === '' || value === null || Number.isNaN(Number(value))) return '';
   const number = Number(value);
@@ -27,6 +29,10 @@ function isFilled(value) {
 
 function numberOrNull(value) {
   return isFilled(value) ? Number(value) : null;
+}
+
+function isValidGrade(value) {
+  return value !== null && value !== undefined && !Number.isNaN(Number(value));
 }
 
 export function defaultGradeState(module) {
@@ -57,9 +63,12 @@ export function calculateModuleAverage(module, entry) {
 
   if (formulaKey === 'single') {
     const unique = numberOrNull(current.unique);
+    const completed = unique !== null;
     return {
       value: unique,
-      completed: unique !== null,
+      completed,
+      validated: completed && unique >= VALIDATION_THRESHOLD,
+      validatedCredits: completed && unique >= VALIDATION_THRESHOLD ? module.credits : 0,
       formulaKey,
       missing: unique === null ? ['note unique'] : [],
     };
@@ -77,7 +86,14 @@ export function calculateModuleAverage(module, entry) {
   if (current.hasProject && project === null) missing.push('projet');
 
   if (missing.length > 0) {
-    return { value: null, completed: false, formulaKey, missing };
+    return {
+      value: null,
+      completed: false,
+      validated: false,
+      validatedCredits: 0,
+      formulaKey,
+      missing,
+    };
   }
 
   let value;
@@ -86,42 +102,81 @@ export function calculateModuleAverage(module, entry) {
   else if (formulaKey === 'tpProject') value = ds * 0.25 + ((tp + project) / 2) * 0.25 + exam * 0.5;
   else value = (ds + 2 * exam) / 3;
 
-  return { value: round2(value), completed: true, formulaKey, missing: [] };
+  const roundedValue = round2(value);
+  const validated = roundedValue >= VALIDATION_THRESHOLD;
+
+  return {
+    value: roundedValue,
+    completed: true,
+    validated,
+    validatedCredits: validated ? module.credits : 0,
+    formulaKey,
+    missing: [],
+  };
 }
 
 export function weightedAverage(items) {
   let total = 0;
-  let completedCredits = 0;
+  let filledCredits = 0;
   let allCredits = 0;
+  let filledCount = 0;
   let completedCount = 0;
   let count = 0;
 
   for (const item of items) {
+    const credits = Number(item.credits) || 0;
     count += 1;
-    allCredits += item.credits;
-    if (item.value !== null && item.value !== undefined && !Number.isNaN(item.value)) {
+    allCredits += credits;
+
+    if (isValidGrade(item.value)) {
+      filledCount += 1;
+      filledCredits += credits;
+      total += Number(item.value) * credits;
+    }
+
+    if (item.isComplete === true || (item.isComplete === undefined && isValidGrade(item.value))) {
       completedCount += 1;
-      completedCredits += item.credits;
-      total += item.value * item.credits;
     }
   }
 
   return {
-    value: completedCredits > 0 ? round2(total / completedCredits) : null,
-    completedCredits,
-    allCredits,
+    value: filledCredits > 0 && allCredits > 0 ? round2(total / allCredits) : null,
+    total: round2(total),
+    filledCredits: round2(filledCredits) || 0,
+    completedCredits: round2(filledCredits) || 0,
+    allCredits: round2(allCredits) || 0,
+    filledCount,
     completedCount,
     count,
     isComplete: count > 0 && completedCount === count,
   };
 }
 
+function applyCreditValidation(average, modules, compensatedModeLabel = 'tu-compensation') {
+  const directCredits = modules.reduce((sum, module) => {
+    return sum + (module.completed && module.value >= VALIDATION_THRESHOLD ? module.credits : 0);
+  }, 0);
+
+  const isCompensated = isValidGrade(average.value) && average.value >= VALIDATION_THRESHOLD;
+  const validatedCredits = isCompensated ? average.allCredits : directCredits;
+
+  return {
+    ...average,
+    validatedCredits: round2(validatedCredits) || 0,
+    completedCredits: round2(validatedCredits) || 0,
+    validationMode: isCompensated ? compensatedModeLabel : 'module-by-module',
+    isCompensated,
+    validationThreshold: VALIDATION_THRESHOLD,
+  };
+}
+
 export function calculateTuAverage(tu, grades) {
   const modules = tu.modules.map((module) => {
     const result = calculateModuleAverage(module, grades[module.code]);
-    return { ...module, ...result, credits: module.credits };
+    return { ...module, ...result, credits: module.credits, isComplete: result.completed };
   });
-  return { ...weightedAverage(modules), modules };
+  const average = weightedAverage(modules);
+  return { ...applyCreditValidation(average, modules, 'tu-compensation'), modules };
 }
 
 export function calculateSemesterAverage(semester, grades) {
@@ -133,9 +188,18 @@ export function calculateSemesterAverage(semester, grades) {
   const tuItems = tus.map((tu) => ({
     value: tu.result.value,
     credits: tu.credits,
+    isComplete: tu.result.isComplete,
   }));
 
-  return { ...weightedAverage(tuItems), tus };
+  const average = weightedAverage(tuItems);
+  const validatedCredits = tus.reduce((sum, tu) => sum + (tu.result.validatedCredits || 0), 0);
+
+  return {
+    ...average,
+    completedCredits: round2(validatedCredits) || 0,
+    validatedCredits: round2(validatedCredits) || 0,
+    tus,
+  };
 }
 
 export function calculateYearTuAverages(year, grades) {
@@ -146,13 +210,14 @@ export function calculateYearTuAverages(year, grades) {
       if (!tuMap.has(tu.id)) tuMap.set(tu.id, []);
       for (const module of tu.modules) {
         const result = calculateModuleAverage(module, grades[module.code]);
-        tuMap.get(tu.id).push({ ...module, ...result, credits: module.credits });
+        tuMap.get(tu.id).push({ ...module, ...result, credits: module.credits, isComplete: result.completed });
       }
     }
   }
 
   return Array.from(tuMap.entries()).reduce((acc, [tuId, modules]) => {
-    acc[tuId] = weightedAverage(modules);
+    const average = weightedAverage(modules);
+    acc[tuId] = { ...applyCreditValidation(average, modules, 'annual-tu-compensation'), modules };
     return acc;
   }, {});
 }
@@ -161,44 +226,57 @@ export function calculateYearAverage(year, grades, options = { includeInternship
   const tuAverages = calculateYearTuAverages(year, grades);
   const formula = year.yearFormula;
   let total = 0;
-  let denominator = 0;
+  let hasAnyValue = false;
   let allComplete = true;
+  let validatedCredits = 0;
   const details = [];
 
-  for (const [tuId, weight] of Object.entries(formula.tuWeights || {})) {
+  const addTuToYear = (tuId, weight) => {
     const tuAverage = tuAverages[tuId];
-    if (tuAverage?.value !== null && tuAverage?.value !== undefined) {
+    const hasValue = isValidGrade(tuAverage?.value);
+
+    if (hasValue) {
       total += tuAverage.value * weight;
-      denominator += weight;
+      hasAnyValue = true;
     } else {
       allComplete = false;
     }
+
     if (!tuAverage?.isComplete) allComplete = false;
-    details.push({ tuId, weight, value: tuAverage?.value ?? null, isComplete: Boolean(tuAverage?.isComplete) });
+    validatedCredits += tuAverage?.validatedCredits || 0;
+    details.push({
+      tuId,
+      weight,
+      value: tuAverage?.value ?? null,
+      isComplete: Boolean(tuAverage?.isComplete),
+      validatedCredits: tuAverage?.validatedCredits || 0,
+      allCredits: tuAverage?.allCredits || weight,
+      validationMode: tuAverage?.validationMode || 'module-by-module',
+    });
+  };
+
+  for (const [tuId, weight] of Object.entries(formula.tuWeights || {})) {
+    addTuToYear(tuId, weight);
   }
 
   let officialDenominator = formula.denominator;
 
   if (formula.withInternship && options.includeInternship) {
-    const tu5 = tuAverages.TU5;
     const weight = formula.withInternship.TU5;
     officialDenominator = formula.withInternship.denominator;
-    if (tu5?.value !== null && tu5?.value !== undefined) {
-      total += tu5.value * weight;
-      denominator += weight;
-    } else {
-      allComplete = false;
-    }
-    if (!tu5?.isComplete) allComplete = false;
-    details.push({ tuId: 'TU5', weight, value: tu5?.value ?? null, isComplete: Boolean(tu5?.isComplete) });
+    addTuToYear('TU5', weight);
   }
 
   return {
-    value: denominator > 0 ? round2(total / denominator) : null,
-    officialValue: allComplete && denominator === officialDenominator ? round2(total / officialDenominator) : null,
-    denominator,
+    value: hasAnyValue && officialDenominator > 0 ? round2(total / officialDenominator) : null,
+    officialValue: allComplete ? round2(total / officialDenominator) : null,
+    total: round2(total),
+    denominator: officialDenominator,
     officialDenominator,
-    isComplete: allComplete && denominator === officialDenominator,
+    completedCredits: round2(validatedCredits) || 0,
+    validatedCredits: round2(validatedCredits) || 0,
+    allCredits: officialDenominator,
+    isComplete: allComplete,
     details,
     tuAverages,
   };
